@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrbitBot - Solar System Chatbot</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #0b1120, #1e3a8a);
+    }
+
+    .chat-container {
+        width: 420px;
+        max-width: 95vw;
+        height: 640px;
+        background: #ffffff;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .chat-header {
+        background: #0b1120;
+        color: #fff;
+        padding: 16px 20px;
+        text-align: center;
+    }
+
+    .chat-header h1 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .chat-header p {
+        font-size: 12px;
+        opacity: 0.85;
+        margin-top: 2px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #eef2ff;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+    }
+
+    .message.user {
+        align-self: flex-end;
+        background: #1e3a8a;
+        color: #fff;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.bot {
+        align-self: flex-start;
+        background: #dbeafe;
+        color: #0f1e40;
+        border-bottom-left-radius: 4px;
+    }
+
+    .message.typing {
+        align-self: flex-start;
+        background: #dbeafe;
+        color: #5b74a8;
+        font-style: italic;
+    }
+
+    .chat-input {
+        display: flex;
+        border-top: 1px solid #e5e7eb;
+        padding: 10px;
+        gap: 8px;
+        background: #fff;
+    }
+
+    .chat-input input {
+        flex: 1;
+        border: 1px solid #d1d5db;
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .chat-input input:focus {
+        border-color: #1e3a8a;
+    }
+
+    .chat-input button {
+        background: #1e3a8a;
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .chat-input button:hover {
+        background: #172d68;
+    }
+
+    .chat-input button:disabled {
+        background: #93a5d6;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>🪐 OrbitBot</h1>
+        <p>Ask me anything about the solar system</p>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="message bot">
+            Hi! I'm OrbitBot. Ask me about the Sun, planets, moons, asteroids, comets, or space missions in our solar system.
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="userInput" placeholder="Type your question..." autocomplete="off">
+        <button id="sendBtn">Send</button>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById("chatMessages");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function addMessage(text, sender) {
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("message", sender);
+        msgDiv.textContent = text;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return msgDiv;
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, "user");
+        userInput.value = "";
+        sendBtn.disabled = true;
+
+        const typingDiv = addMessage("OrbitBot is typing...", "typing");
+
+        try {
+            const res = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
+            });
+
+            const data = await res.json();
+            typingDiv.remove();
+            addMessage(data.reply, "bot");
+        } catch (err) {
+            typingDiv.remove();
+            addMessage("Error: could not reach the server.", "bot");
+        } finally {
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html>
